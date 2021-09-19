@@ -1,0 +1,728 @@
+/**
+ * JavaCC template file created by SF JavaCC plugin 1.5.17+ wizard for JavaCC 1.5.0+
+ */
+
+options
+{
+   LOOKAHEAD=20;
+    FORCE_LA_CHECK=true;
+    IGNORE_CASE=true;
+  STATIC = false; // (default true)
+}
+
+PARSER_BEGIN(EG1)
+import data.*;
+//import data.strips.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Hashtable;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.io.FileReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
+public class EG1 {
+
+  protected static InformationFile IP = new InformationFile();
+  protected static Map auxPreferenceMap = new Hashtable();  
+
+
+
+   public static InformationFile parseFiles(File domain, File problem) {
+     // EG1 parser = new EG1 (domain);
+       parseDomainFile(domain);
+      //parser = new EG1(domain);
+       parseProblemFile(problem);
+
+       return IP;
+
+  }
+
+  private static void parseDomainFile(File domain) {
+
+        try {
+           FileReader domainFileReader = new FileReader(domain);
+           EG1 parser = new EG1 (domainFileReader);
+           System.out.println("File " + domain.getAbsoluteFile());
+           parser.parseDomain();
+           domainFileReader.close();
+					
+			} catch (FileNotFoundException e) {
+					System.out.println("File not found" + e.getMessage());
+
+            }catch (IOException e) {
+					System.out.println("File not found" + e.getMessage());
+
+            }
+
+			 catch (ParseException e) {
+					System.out.println("File nparser file" + e.getMessage());
+
+            }
+       
+    }
+    
+    private static void parseProblemFile(File problem) {
+       
+        try {
+           
+           FileReader problemFileReader = new FileReader(problem);
+           System.out.println("File " + problem.getAbsoluteFile());
+           EG1 parser = new EG1 (problemFileReader);
+           parser.parseProblem();
+		   problemFileReader.close();		
+			}catch (FileNotFoundException e) {
+					System.out.println("File not found" + e.getMessage());
+
+            }catch (IOException e) {
+					System.out.println("File not found" + e.getMessage());
+
+            }
+			catch (ParseException e) {
+					System.out.println("File parser file " + e.getMessage());
+
+            }
+       
+        
+
+    }
+
+    private static class TypedList { 
+		public List objects = new ArrayList();
+		public Map types = new Hashtable();    // Maps strings onto Types
+		
+		public void add(String s)
+		{
+			objects.add(s);
+			//types.put(s,SimpleType.rootType);
+		}
+	
+		public void add(String s, String t)
+		{
+			objects.add(s);
+			types.put(s,t);
+		}
+	}
+
+  
+}
+
+
+
+PARSER_END(EG1)
+
+SKIP :
+ {
+     " "
+ |   "\r"
+ |   "\t"
+ |   "\n"
+ }
+ TOKEN:
+ {
+     < OPEN: "(" >
+ |   < CLOSE: ")" >
+ |   < DEFINE: "define" >
+ |   < DOMAIN: "domain" >
+ |   < DOMAIN_LABEL: ":domain" >
+ |   < REQUIREMENTS: ":requirements" >
+ |   < REQUIREMENT_LABELS: ":typing :constraints :preferences" >
+ |   < TYPES: ":types" >
+ |   < PREDICATES: ":predicates" >
+ |   < PROBLEM: "problem" >
+ |   < TYPE_IDENT: "-" >
+ |   < VAR: "?" <NAME> >
+ |   < ACTION: ":action" >
+ |   < PARAMETERS: ":parameters" >
+ |   < PRECONDITION: ":precondition" >
+ |   < CONSTRAINTS: ":constraints" >
+ |   < PREFERENCE: "preference" >
+ |   < EFFECT: ":effect" >
+ |   < OBJECTS: ":objects" >
+ |   < GOAL: ":goal" >
+ |   < INIT: ":init" >
+ |   < AND: "and" >
+ |   < NOT: "not" >
+ |   < NUMBER: (["0"-"9"])+ ("." (["0"-"9"])+)? >
+ |   < NAME: (["a"-"z", "_", "A"-"Z", "0"-"9", "-"])+ >
+ }
+
+ SPECIAL_TOKEN:
+ {
+     <SINGLE_LINE_COMMENT: ";;" (~["\n", "\r"])* ("\n" | "\r" | "\r\n")>
+ }
+
+boolean parseDomain():
+{
+      Token t;
+      boolean req = true;
+}
+{
+    <OPEN> <DEFINE> <OPEN> <DOMAIN> t=<NAME> <CLOSE>
+          {
+             IP.domainName = t.toString();
+            
+          }
+          (parseRequireDef())?
+            {if(!req) return false;}
+            (parseTypeDef())?            
+            parsePredicatesDef()
+            
+            (
+              parseActionDef())?
+            
+       < CLOSE >     
+      <EOF>
+      { return true;}
+      
+}
+
+boolean parseRequireDef():
+{
+	Token t;
+}
+{
+  
+     <OPEN> <REQUIREMENTS> ( t = <REQUIREMENT_LABELS> {IP.requirements.add(t.toString());})* <CLOSE> {return true;}
+}
+// ***************************************************
+// *	Parse the type definitions
+// ***************************************************
+void parseTypeDef():
+{
+    Token t	;
+}
+{
+    <OPEN> <TYPES> (t = <NAME> {IP.types.add(t.toString());})+ < CLOSE >
+}
+// ***************************************************
+// *	Parse the predicates
+// ***************************************************
+
+void parsePredicatesDef():
+{
+}
+{
+   {System.out.println(" ENTRANDO 2 NO PREDICATE" ); }
+    <OPEN> <PREDICATES> (parsePredicate())+ <CLOSE>
+}
+
+void parsePredicate():
+{
+    Token t;
+    
+    String namePredicate="";
+    List< VarTypes> lstParameteres = new ArrayList< VarTypes>();
+    
+}
+{
+       
+        // (
+           <OPEN>
+           (
+              namePredicate = predicateSymbol()
+              { System.out.println(" Predicate  - > " + namePredicate ); }
+              lstParameteres =  parseLisType() 
+              { IP.predicatesMap.put(namePredicate,lstParameteres); }
+           )+ < CLOSE >    
+         
+       
+     // {System.out.println(" Buceta  - > "  ); }
+}
+
+String predicateSymbol():
+{
+  Token t;
+}
+{
+   t = <NAME>
+
+   { return t.toString();}
+}
+
+ 
+List< VarTypes> parseLisType():
+{
+  Token t;
+  List< VarTypes> lstParameteres = new ArrayList< VarTypes>();
+  String var="", type="";
+  VarTypes varTypes;
+  
+}
+{
+   
+  (t=<VAR>{ var = t.toString(); }
+    {
+      
+      System.out.println(" variável  - > " + var);
+
+    }
+    <TYPE_IDENT> t=<NAME>    
+    {
+       type = t.toString();
+	   System.out.println(" tipo  - > " + type);
+	   type = t.toString();
+       varTypes = new VarTypes(var, type);
+       lstParameteres.add(varTypes);
+    })+
+    
+
+    { return  lstParameteres; }   
+    
+
+}
+
+
+// ***************************************************
+// *	Parse the actions
+// ***************************************************
+
+void parseActionDef():
+{
+  Token t,k;
+  Action action = new Action();
+  List< VarTypes> lstParameteres = new ArrayList< VarTypes>();
+  PrecondictionAction pca = new PrecondictionAction();
+  Effect eff = new Effect();
+  String aux="";
+  TypedList tl;
+  
+  
+}
+{    
+     
+    
+      (
+        <OPEN> <ACTION> action.nameAction = nameAction()
+    <PARAMETERS> <OPEN> lstParameteres =  parseLisType()<CLOSE>
+     
+     {
+         
+		 IP.action.add(action);
+		 Iterator it = lstParameteres.iterator();
+		 while(it.hasNext()) {
+		       VarTypes  varTypes = (VarTypes)it.next();
+				action.parameters.add(varTypes.getType());
+		 }
+      }
+               
+      
+         <PRECONDITION> < OPEN > < AND >  
+      			   (
+      			     < OPEN >tl =  structureAction() < CLOSE >        				  
+      				  {
+      				      pca.objects = tl.objects; 
+      				  	  pca.precondiction = tl.types; 
+      				  	  action.lstPreCondictions.add(pca);
+      				   }
+      				
+      			  )*  
+           < CLOSE > 
+     
+        < EFFECT > < OPEN > ( action.lstEffect = getEffect()) < CLOSE >         
+                    
+   <CLOSE>	
+  )+		  
+}  
+
+String nameAction():
+{
+  Token t;
+}
+{
+	t=< NAME > {
+	  System.out.println(" NAME OF THE ACTION:  " + t.toString());
+	  return t.toString();}
+}
+
+TypedList structureAction():
+{
+  Token t,k;
+  TypedList lst = new TypedList();
+   String aux="";
+  
+}    
+
+{         
+      
+      (t=< NAME >) {
+                        System.out.println(" PRECONDICTIONS  2- > " + t.toString());
+                        aux= t.toString();
+						lst.add(aux);
+        	         }
+
+      (
+        ( k= < VAR >)  {
+						System.out.println(" PRECONDICTIONS 3 - > " + k.toString());
+						lst.add(aux, k.toString());
+
+
+        			 } )*  
+       
+       { return lst;}
+      
+}
+
+
+List <Effect> getAux():
+{
+  List< Effect> ls = new ArrayList<Effect>();
+  Effect eff = new Effect();  
+  TypedList tl;
+
+}
+{
+      
+        < NOT > < OPEN > (tl =  structureAction()) < CLOSE > 
+                {
+                  System.out.println("***** EFFECT WITH NOT *****");			      
+			      eff.objects = tl.objects;
+			      eff.effect = tl.types;
+			      eff.value.put(tl.types, true);
+			      ls.add(eff);
+			      return ls;	                     
+                }  
+          | (   tl = structureAction()
+            {
+			 System.out.println("#######  EFFECT WITHOUT NOT ####### ");
+			 
+			 eff.objects = tl.objects;
+			  eff.effect = tl.types;
+			 eff.value.put(tl.types, false);
+			 ls.add(eff);
+              System.out.println(" SAIU  - > ");
+               return ls;
+            })
+           
+      
+   
+  // { return ls; }
+}
+
+List <Effect> getEffect():
+{
+  List< Effect> ls = new ArrayList<Effect>();
+  Effect eff = new Effect();  
+  TypedList tl;
+}
+{
+  
+			 (
+			
+			         < AND > < OPEN >  ( ls =  getAux() )< CLOSE > 
+			                {
+			                  System.out.println(" EFFECT WITH NOT NEWLY - > "); 
+						      eff.value.put(ls, false);
+						      ls.add(eff);	                     
+			          } 
+			        |  ( < OPEN > ls =  getAux()) < CLOSE > 
+			            {
+							 System.out.println(" EFFECT WITHOUT NOT   - > ");
+							 
+							 eff.value.put(ls, true);
+							 ls.add(eff);
+				              System.out.println(" SAIU  - > ");
+			            }
+			        | ( ls =getAux())
+			          {
+                        eff.value.put(ls, true);
+						ls.add(eff);   	
+   		              }			
+			)* 
+
+             
+            
+       	   
+
+	      { return ls; }
+      			      
+}
+
+/*****************************************************************************************************************************************
+*
+*															File Problem
+*
+*******************************************************************************************************************************************/
+
+void parseProblem():
+{  
+
+}
+{
+    (
+      defineProblem())
+
+  
+}
+
+void defineProblem():
+{
+  Token t,k;
+  String nameProblem = "";
+  String nameDomain = "";
+}
+{
+  < OPEN >< DEFINE > < OPEN > < PROBLEM > t = < NAME >  < CLOSE > < OPEN > < DOMAIN_LABEL > k = < NAME >  < CLOSE >
+  {
+    IP.defineProblemMap.put(t.toString(),k.toString());
+  }
+   
+     
+       getMapObjects()
+       getMapInit()
+       getMapGoal()
+       getMapPreferences()
+
+   ///  < CLOSE >
+   //  < EOF > 
+}
+
+void getMapObjects():
+{    
+	 
+}
+{
+  
+    
+  < OPEN > < OBJECTS >  (getObject()) < CLOSE >
+
+}
+void getMapInit():
+{
+}
+{
+ // { System.out.println(" SAIDA INIT "); }
+  < OPEN > < INIT >  (getInit())  < CLOSE > 
+}
+void getMapGoal():
+{
+}
+{
+ // { System.out.println(" SAIDA INIT "); }
+  < OPEN > < GOAL > < OPEN > < AND >   (getGoal())  < CLOSE > < CLOSE > 
+}
+void getMapPreferences():
+{
+ List symbolPreference = new ArrayList();
+    Token t;
+}
+{
+   { System.out.println(" ESTIVE AQUI "); }
+    < OPEN > < CONSTRAINTS >  < OPEN > < AND > (getPreference())  < CLOSE >
+
+   
+}
+
+
+void getObject():
+{
+    Token t;
+    //String object="";
+    String type = "";
+    List object= new ArrayList(); 
+}
+{  
+         
+           (            
+             
+              (t = < NAME > { object.add(t.toString()); } ) *         
+          		 
+          		( < TYPE_IDENT > t = < NAME > ){  type= t.toString(); }   	
+	    	    {			    		
+			     IP.objectMap.put(type, object);
+		  	     System.out.println(" DE NOVO " + type + " " + object);
+		  	     object.clear();
+			    }
+		     
+    )+  
+    { System.out.println(" DE NOVO asasasasas "); }
+  
+}
+void getInit():
+{
+    Token t;
+    //String object="";
+    String type = "";
+    List object= new ArrayList(); 
+}
+{  
+          { System.out.println(" ENTRANDO NO  INIT "); }
+           
+             ( < OPEN > 
+              t = < NAME > {type= t.toString();  }          
+          		 
+          		(t = < NAME > {object.add(t.toString());  }  )+   	
+	    	    {			    		
+			     IP.initMap.put(type, object);
+		  	     System.out.println(" INIT " + type + " " + object);
+		  	     object.clear();
+			    }
+		     
+    < CLOSE >)+ 
+    { System.out.println(" SAIDA INIT "); }
+  
+}
+void getGoal():
+{
+    Token t;
+    String objectSymbol="";  
+    List value = new ArrayList(); 
+}
+{  
+          { System.out.println(" INPUT GOAL "); }
+           
+             ( < OPEN > 
+              t = < NAME > {objectSymbol= t.toString();  }          
+          		 
+          		(t = < NAME > {value.add(t.toString()); }  ) +  	
+	    	    {			    		
+			     IP.goalMap.put(objectSymbol, value);
+		  	     System.out.println(" GOAL " + objectSymbol + " " + value);
+		  	     value.clear();
+			    }
+		     
+    < CLOSE >)+ 
+    { System.out.println(" OUTPUT GOAL "); }
+  
+}
+void getPreference():
+{
+   
+    Token t,k;
+    Set object = new HashSet();
+    String typePreference="";
+    String objectSymbol = "";
+    Predicate predicate;
+    Map auxMap = new Hashtable();
+    Map<Object, List<Object > > auxMap2 = new Hashtable<Object, List<Object > >();
+    List  lstVarPredicate;
+    List lstPredicate  ;
+    
+}
+{  
+     { System.out.println(" INPUT PREFERENCE "); }          
+             
+             ( 
+                < OPEN > < PREFERENCE > ( k = < NAME > 
+                            < OPEN >
+                                (
+                                    t = < NAME >   {
+                                                            typePreference = t.toString();
+                                                            System.out.println("type of preference ---> " + typePreference);
+															//object.add(typePreference);
+															lstVarPredicate = new ArrayList();
+															
+															
+                                                     }
+                                )
+                                ( < OPEN > t=< NAME > {objectSymbol = t.toString(); }
+                                        (t = < NAME > {lstVarPredicate.add(t.toString()); } )+< CLOSE >
+                                            {
+											  System.out.println(" ######## "+ objectSymbol);
+											  for(Object pe : lstVarPredicate) { System.out.println("@@ " + pe);}
+											  
+                                              predicate = new Predicate(objectSymbol,lstVarPredicate);
+                                                
+                                                 if (auxMap2.isEmpty())
+                                                 {												                                  		
+                                              		
+													lstPredicate = new ArrayList<Object>();
+													lstPredicate.add(predicate);
+													
+																												
+												  }else
+												  { 
+												     if (auxMap2.containsKey(typePreference))
+												     { 
+												    	lstPredicate = (List) auxMap2.get(typePreference);
+												    	
+												    	lstPredicate.add(predicate);
+												    	 lstVarPredicate = new  ArrayList() ;
+												    	for(Object pe : lstPredicate) { System.out.println("%%%%%%% " + pe);}
+												    	
+												   	 }
+												   	  else
+												   	  {
+												   	    lstPredicate = new ArrayList<Object>();
+												   	    System.out.println("Predicate to string: " + predicate.toString());
+												   	    lstPredicate.add(predicate);
+												   	    auxMap2.put(typePreference, lstPredicate);
+												   	    Predicate pre = (Predicate)lstPredicate.get(0);
+												    	System.out.println("Predicate list inicial : " + pre.toString());
+												   	    lstVarPredicate = new  ArrayList() ;
+												   	  }
+
+												  }
+													  
+												                                                 
+                                             }
+                                                                                              
+                                                                             
+                                )+ < CLOSE >
+                            
+                 	{
+                 	   //  System.out.println(" Map ls ----> " + auxMap);  	 
+                         auxMap2.put(typePreference, lstPredicate);
+                        // IP.preferenceMap.put(typePreference, lstPredicate);
+                         System.out.println(" MAP PREFERENCE -- > " + auxMap2);
+                         //lstPredicate.clear();                        
+                        
+                    }
+             < CLOSE >)+
+		   { auxMap.put(k.toString(), auxMap2);}
+           )+
+             {
+
+			   System.out.println("*********************************** PRINT *************************************");
+               Set keys = auxMap2.keySet();
+
+               for (Object preference: keys) {
+						List lst = auxMap2.get(preference);
+						for(Object p: lst)
+						{
+						  Predicate auxPred = (Predicate)p;
+
+						  System.out.println(preference +" " + auxPred.toString());
+						}
+
+               }
+               
+
+
+             }
+ 
+}
+
+Map getAuxPreference(String objectSymbol):
+{
+    Token t;
+    //String objectSymbol="";  
+    List value = new ArrayList();
+    Map auxMap = new Hashtable(); 
+}
+{  
+          { System.out.println(" Preference Input "); }
+           
+             (   
+          		(t = < NAME > {value.add(t.toString()); }  ) +  	
+	    	    {			    		
+			     auxMap.put(objectSymbol, value);
+		  	    // System.out.println(" Preference 3 " + objectSymbol + " " + value);
+		  	    // value.clear();
+			    }
+		     
+    < CLOSE >)+ 
+    { return auxMap; }
+  
+}
+
+
+
+
+
+
+
